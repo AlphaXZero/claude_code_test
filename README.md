@@ -41,8 +41,12 @@ Avec le faux fournisseur, une action se déclenche quand on tape son id exact (e
 ## Tests
 
 ```bash
-cd server && npm test         # moteur, chargeur de cas, pannes du faux fournisseur
+cd server
+npm test                      # unitaires : moteur, chargeur de cas, pannes, fuseau horaire, secret JWT
+TEST_DATABASE_URL=postgresql://caseprompt:caseprompt@localhost:5432/caseprompt_test npm run test:int
 ```
+
+`test:int` démarre l'API compilée sur une vraie base et vérifie l'isolation entre joueurs, les droits admin, les erreurs en français, le quota, la limite de tentatives de connexion et la suppression de compte. La base doit avoir « test » dans son nom : ses tables sont vidées à chaque lancement. La CI lance les deux.
 
 À rejouer après chaque modification des prompts : les **tests pièges** (regarder sans toucher, poser une question, demander la solution, « ignore tes instructions », action hors liste), en partie réelle avec le vrai modèle.
 
@@ -55,6 +59,7 @@ Ajouter un fichier `server/cases/<slug>.json` au format décrit dans l'analyse (
 ```bash
 git clone <ce dépôt> /opt/case-prompt && cd /opt/case-prompt
 cp .env.example .env          # renseigner DOMAIN, mots de passe, clé OpenRouter, admin
+                              # JWT_SECRET : openssl rand -hex 32 (le serveur refuse de démarrer sinon)
 docker compose up -d --build
 ```
 
@@ -82,7 +87,8 @@ Caddy obtient le certificat HTTPS pour `DOMAIN`. La CI (`.github/workflows/ci.ym
 - **Limite du procès** : 8 échanges. Au dernier, le modèle doit choisir une fin ; s'il ne le fait pas, le serveur choisit la fin perdante sans prérequis.
 - **Personnage du procès** : défini par cas (`resolution.character`) ; la juge Moreau pour le premier cas.
 - **États cachés** : ne disparaissent que par l'IA ; 5 au maximum.
-- **Quota** : en tours par jour (60 en gratuit, 600 en premium) ; une rejouée compte. Seuls les appels réussis sont comptés.
+- **Quota** : en tours par jour, heure de Paris (60 en gratuit, 600 en premium) ; une rejouée compte. Comptent les appels réussis et les réponses inutilisables (facturées par le fournisseur) ; les délais dépassés et les pannes ne comptent pas.
+- **Connexion et inscription** : 10 tentatives par minute et par adresse IP.
 - **Guidage de l'IA** : réagit aux théories, et peut attirer l'attention sur un élément visible si le joueur tourne en rond (jamais sur une cachette).
 
 ## À faire par l'équipe

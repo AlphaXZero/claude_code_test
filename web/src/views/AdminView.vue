@@ -4,6 +4,8 @@ import { api } from '../api';
 
 interface Stats {
   days: number;
+  timezone: string;
+  today: string;
   totals: { calls: number; cost: number; failures: number; costPerTurn: number };
   perDay: { day: string; calls: number; failures: number; cost: number; inputTokens: number; outputTokens: number; avgMs: number }[];
   perPlayer: { userId: string | null; email: string; plan: string | null; calls: number; cost: number }[];
@@ -56,25 +58,40 @@ const series = computed(() => {
   if (!stats.value) return [];
   const byDay = new Map(stats.value.perDay.map((d) => [d.day, d]));
   const out = [];
-  const today = new Date();
+  // Days are in the server's time zone (Paris); "today" comes from the server, not from the viewer's clock.
+  const today = new Date(`${stats.value.today}T12:00:00Z`);
   for (let i = stats.value.days - 1; i >= 0; i--) {
     const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    d.setUTCDate(today.getUTCDate() - i);
+    const key = d.toISOString().slice(0, 10);
     const row = byDay.get(key);
     out.push({ day: key, cost: row?.cost ?? 0, calls: row?.calls ?? 0, failures: row?.failures ?? 0 });
   }
   return out;
 });
 const maxValue = computed(() => Math.max(...series.value.map((d) => d[metric.value]), metric.value === 'cost' ? 0.0001 : 1));
-const shortDay = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+const shortDay = (iso: string) =>
+  new Date(`${iso}T12:00:00Z`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
-async function setPlan(u: AdminUser, plan: 'FREE' | 'PREMIUM') {
-  await api(`/admin/users/${u.id}/plan`, { method: 'PATCH', body: { plan } });
-  u.plan = plan;
+async function setPlan(u: AdminUser, plan: 'FREE' | 'PREMIUM', select: HTMLSelectElement) {
+  error.value = '';
+  try {
+    await api(`/admin/users/${u.id}/plan`, { method: 'PATCH', body: { plan } });
+    u.plan = plan;
+  } catch (e) {
+    select.value = u.plan; // the change did not happen: show the real plan again
+    error.value = (e as Error).message;
+  }
 }
 async function setMode(mode: string) {
-  fake.value = await api<FakeMode>('/admin/fake-mode', { method: 'PUT', body: { mode } });
+  error.value = '';
+  try {
+    fake.value = await api<FakeMode>('/admin/fake-mode', { method: 'PUT', body: { mode } });
+  } catch (e) {
+    error.value = (e as Error).message;
+    // Reload to show the mode really in place.
+    fake.value = await api<FakeMode>('/admin/fake-mode').catch(() => fake.value);
+  }
 }
 </script>
 
@@ -90,7 +107,7 @@ async function setMode(mode: string) {
       </select>
     </label>
   </div>
-  <p v-if="error" class="notice">{{ error }}</p>
+  <p v-if="error" class="notice sticky-error" role="alert">{{ error }}</p>
 
   <template v-if="stats">
     <section class="tiles">
@@ -176,7 +193,7 @@ async function setMode(mode: string) {
             <td>{{ u.role === 'ADMINISTRATOR' ? 'Admin' : 'Joueur' }}</td>
             <td class="num">{{ u._count.games }}</td>
             <td>
-              <select :value="u.plan" :aria-label="`Offre de ${u.email}`" @change="setPlan(u, ($event.target as HTMLSelectElement).value as 'FREE' | 'PREMIUM')">
+              <select :value="u.plan" :aria-label="`Offre de ${u.email}`" @change="setPlan(u, ($event.target as HTMLSelectElement).value as 'FREE' | 'PREMIUM', $event.target as HTMLSelectElement)">
                 <option value="FREE">Gratuite</option>
                 <option value="PREMIUM">Premium</option>
               </select>
@@ -200,6 +217,7 @@ async function setMode(mode: string) {
 </template>
 
 <style scoped>
+.sticky-error { position: sticky; top: 70px; z-index: 5; background: #2a1716; }
 .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .range select { width: auto; margin-left: 8px; }
 section.card { margin-top: 20px; }

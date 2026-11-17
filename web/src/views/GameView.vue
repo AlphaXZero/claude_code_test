@@ -85,11 +85,15 @@ async function goToResolution() {
 
 async function replay() {
   if (!game.value) return;
-  const g = await api<Game>('/games', { method: 'POST', body: { caseSlug: game.value.case.slug } });
-  await router.push(`/partie/${g.id}`);
-  game.value = g;
-  text.value = '';
   error.value = '';
+  try {
+    const g = await api<Game>('/games', { method: 'POST', body: { caseSlug: game.value.case.slug } });
+    await router.push(`/partie/${g.id}`);
+    game.value = g;
+    text.value = '';
+  } catch (e) {
+    error.value = (e as Error).message;
+  }
 }
 </script>
 
@@ -161,6 +165,7 @@ async function replay() {
         <div v-if="game.ending" class="ending card">
           <span class="badge" :class="game.ending.outcome.toLowerCase()">{{ outcomeLabel[game.ending.outcome] }}</span>
           <p class="ending-text">{{ game.ending.text }}</p>
+          <p v-if="error" class="notice" role="alert">{{ error }}</p>
           <div class="row">
             <button class="btn" @click="replay">Rejouer l’enquête</button>
             <RouterLink to="/enquetes" class="btn ghost">Autres enquêtes</RouterLink>
