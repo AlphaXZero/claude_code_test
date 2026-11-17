@@ -1,0 +1,131 @@
+{
+  "title": "Mort dans le bureau du PDG",
+  "side": "defence",
+  "action_limit": 20,
+  "story": {
+    "intro": "Victor Lambert, PDG de Lambert Industries, a été retrouvé mort dans son bureau au dernier étage, poignardé, vers 23 h. Ta cliente, Claire Dubois, son assistante, est accusée : un couteau a été retrouvé dans son tiroir. Tu es son avocat et tu as accès à la scène avant le procès.",
+    "truth": "Le directeur financier, Marc Delorme, détournait de l'argent via de fausses factures. Lambert l'a découvert et l'a menacé de le dénoncer. Delorme l'a tué vers 22 h 30 avec un coupe-papier, qu'il a caché dans le conduit d'aération de la salle des archives, puis il a placé un couteau de cuisine propre dans le tiroir de l'assistante pour la faire accuser. Il a déchiqueté une partie des factures et est sorti par l'escalier de service. Claire Dubois était partie à 21 h 40, comme le montre le registre.",
+    "ai_guidance": "Réagis aux théories du joueur selon ce que la vérité permet, sans jamais nommer le coupable ni indiquer un objet caché. Si le joueur tourne en rond depuis plusieurs tours, tu peux attirer son attention sur un élément visible de la scène, jamais sur une cachette."
+  },
+  "scene": {
+    "image": "bureau-pdg.svg",
+    "description": "Un grand bureau au dernier étage, la nuit. La pluie coule sur la baie vitrée. Un bureau en bois massif avec un tiroir, un ordinateur éteint, un café froid. Une corbeille remplie de papier déchiqueté. Au fond, une porte fermée mène à la salle des archives. Près de l'entrée, le registre des badges de l'étage est posé sur une console. Une tache sombre sur la moquette marque l'endroit où le corps a été retrouvé.",
+    "details": [
+      "La baie vitrée donne sur la ville, elle est fermée et ne s'ouvre pas.",
+      "Le café sur le bureau est froid, la tasse porte les initiales V.L.",
+      "Le corps a été emporté ; la police a laissé un marquage au sol.",
+      "Une photo de famille est posée sur le bureau.",
+      "Il pleut fort, on entend la ventilation de l'immeuble."
+    ]
+  },
+  "resolution": {
+    "character": "La juge Moreau",
+    "image": "tribunal.svg",
+    "tone": "Sèche, exigeante, et ouvertement sarcastique quand la défense avance sans preuve."
+  },
+  "actions": {
+    "fouiller_tiroir": {
+      "description": "Le bureau en bois massif a un seul tiroir, celui que la police a ouvert pour trouver le couteau.",
+      "ai_hint": "Facile, le tiroir n'est pas fermé à clé.",
+      "gives": ["cle", "couteau"],
+      "result": "Dans le tiroir : une petite clé en laiton et le couteau de cuisine sous scellé provisoire. La lame est parfaitement propre."
+    },
+    "examiner_corbeille": {
+      "description": "La corbeille déborde de bandes de papier déchiqueté.",
+      "ai_hint": "Il faut une démarche soigneuse : reconstituer ou trier les bandes, pas juste regarder. Un simple coup d'œil ne suffit pas.",
+      "gives": ["factures"],
+      "result": "En recollant patiemment quelques bandes, tu reconstitues des factures d'un fournisseur nommé « Delta Conseil », toutes validées par la direction financière."
+    },
+    "consulter_registre": {
+      "description": "Le registre des badges de l'étage, posé près de l'entrée.",
+      "ai_hint": "Facile si le joueur le lit ou le consulte.",
+      "gives": ["registre"],
+      "result": "Le registre indique que Claire Dubois a badgé en sortie à 21 h 40. Marc Delorme, le directeur financier, a badgé en entrée à 22 h 05, sans sortie enregistrée."
+    },
+    "allumer_ordinateur": {
+      "description": "L'ordinateur du PDG, éteint, protégé par un mot de passe.",
+      "ai_hint": "Difficile. Il faut une idée crédible pour le mot de passe : la photo de famille, les initiales, un post-it. Taper au hasard échoue.",
+      "gives": ["email"],
+      "result": "La session s'ouvre. Dernier courriel envoyé par Victor Lambert à 21 h 58, à Marc Delorme : « J'ai les factures Delta Conseil. Demain matin, j'appelle la police. »"
+    },
+    "ouvrir_archives": {
+      "description": "La porte de la salle des archives est fermée à clé.",
+      "ai_hint": "Facile avec la clé en laiton. Sans elle, seule une idée vraiment convaincante fonctionne (crocheter avec un outil crédible, appeler le gardien).",
+      "helped_by": ["cle"],
+      "result": "La porte s'ouvre sur une petite pièce remplie d'étagères et de cartons. Une grille d'aération est fixée au mur."
+    },
+    "fouiller_cartons": {
+      "description": "Des cartons d'archives sur les étagères de la salle des archives.",
+      "ai_hint": "Facile une fois dans la pièce, si le joueur fouille les cartons ou les étagères.",
+      "requires": ["ouvrir_archives"],
+      "gives": ["lettre"],
+      "result": "Dans le carton le plus récent, une lettre froissée, signée M.D. : « Si tu parles, tu le regretteras. »"
+    },
+    "ouvrir_aeration": {
+      "description": "La grille d'aération de la salle des archives, vissée au mur.",
+      "ai_hint": "Moyen. Il faut un moyen crédible de dévisser ou forcer la grille (pièce de monnaie, clé, couteau). Le joueur doit avoir une raison d'y regarder.",
+      "requires": ["ouvrir_archives"],
+      "helped_by": ["cle", "couteau"],
+      "gives": ["coupe_papier"],
+      "result": "Derrière la grille, enveloppé dans un mouchoir taché de sang, un coupe-papier en argent gravé « M.D. »."
+    }
+  },
+  "items": {
+    "cle": { "name": "Clé en laiton" },
+    "couteau": {
+      "name": "Couteau de cuisine",
+      "evidence": true,
+      "meaning": "Placé : aucune trace de sang, la lame ne correspond pas à la blessure. Il ne prouve pas l'innocence à lui seul, il montre seulement une mise en scène."
+    },
+    "factures": {
+      "name": "Factures Delta Conseil",
+      "evidence": true,
+      "meaning": "Fausses factures validées par la direction financière : la fraude, donc le mobile."
+    },
+    "registre": {
+      "name": "Registre des badges",
+      "evidence": true,
+      "meaning": "L'assistante est partie à 21 h 40, avant le meurtre ; Delorme est entré à 22 h 05 et n'est pas ressorti par l'entrée principale."
+    },
+    "email": {
+      "name": "Courriel de Victor Lambert",
+      "evidence": true,
+      "meaning": "Lambert menace Delorme de le dénoncer : prouve le mobile."
+    },
+    "lettre": {
+      "name": "Lettre de menace",
+      "evidence": true,
+      "meaning": "Écrite par Delorme : prouve qu'il menaçait la victime."
+    },
+    "coupe_papier": {
+      "name": "Coupe-papier gravé M.D.",
+      "evidence": true,
+      "meaning": "L'arme du crime, appartenant à Delorme."
+    }
+  },
+  "endings": {
+    "acquittement": {
+      "outcome": "win",
+      "requires_items": ["coupe_papier", "registre"],
+      "ai_hint": "Seulement si le joueur montre que l'assistante était partie (registre) et désigne la vraie arme (coupe-papier), idéalement avec le mobile.",
+      "text": "La juge Moreau repose ses lunettes. « Claire Dubois, vous êtes acquittée. » Deux jours plus tard, Marc Delorme est arrêté à l'aéroport. Ta cliente te serre la main sans un mot : c'est suffisant."
+    },
+    "mobile_prouve": {
+      "outcome": "win",
+      "requires_items": ["registre", "lettre"],
+      "ai_hint": "Si le joueur prouve l'absence de l'assistante (registre) et le mobile de Delorme (lettre, et éventuellement courriel ou factures), même sans l'arme.",
+      "text": "« Le tribunal ne peut condamner sur une mise en scène aussi grossière. » Claire Dubois est acquittée. L'enquête est rouverte contre Marc Delorme, qui reste libre pour l'instant."
+    },
+    "doute": {
+      "outcome": "mixed",
+      "requires_items": ["couteau"],
+      "ai_hint": "Si le joueur montre que le couteau a été placé, mais ne peut pas établir l'alibi ou le mobile d'un autre.",
+      "text": "« Il y a un doute, Maître. Un doute, pas une certitude. » Le procès est renvoyé pour complément d'enquête. Ta cliente reste sous contrôle judiciaire."
+    },
+    "condamnation": {
+      "outcome": "loss",
+      "ai_hint": "Si le joueur n'a aucun argument convaincant, ou tourne en rond.",
+      "text": "« Des impressions ne sont pas des preuves. » Claire Dubois est reconnue coupable. En sortant, tu croises Marc Delorme dans le couloir. Il te sourit."
+    }
+  }
+}

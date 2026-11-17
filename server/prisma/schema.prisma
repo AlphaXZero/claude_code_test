@@ -1,0 +1,191 @@
+// Case Prompt: database schema (section 4 of the analysis).
+// A case is written as a JSON file (server/cases) and imported by the loader.
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PLAYER
+  ADMINISTRATOR
+}
+
+enum Plan {
+  FREE
+  PREMIUM
+}
+
+enum Side {
+  DEFENCE
+  PROSECUTION
+}
+
+enum Phase {
+  INVESTIGATION
+  RESOLUTION
+  FINISHED
+}
+
+enum Outcome {
+  WIN
+  MIXED
+  LOSS
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(PLAYER)
+  plan         Plan     @default(FREE)
+  createdAt    DateTime @default(now())
+  games        Game[]
+  aiCalls      AiCall[]
+}
+
+model Case {
+  id                  String   @id @default(uuid())
+  slug                String   @unique
+  title               String
+  side                Side
+  intro               String
+  truth               String
+  aiGuidance          String
+  actionLimit         Int
+  sceneImage          String
+  sceneDescription    String
+  sceneDetails        String[]
+  resolutionCharacter String
+  resolutionTone      String
+  resolutionImage     String
+  published           Boolean  @default(true)
+  actions             Action[]
+  items               Item[]
+  endings             Ending[]
+  games               Game[]
+}
+
+model Action {
+  id            String   @id @default(uuid())
+  caseId        String
+  case          Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  code          String
+  description   String
+  aiHint        String
+  result        String
+  requires      Action[] @relation("ActionRequires")
+  requiredBy    Action[] @relation("ActionRequires")
+  requiresItems Item[]   @relation("ActionRequiresItems")
+  helpedBy      Item[]   @relation("ActionHelpedBy")
+  gives         Item[]   @relation("ActionGives")
+  doneIn        Game[]   @relation("GameDoneActions")
+  turns         Turn[]
+
+  @@unique([caseId, code])
+}
+
+model Item {
+  id                 String   @id @default(uuid())
+  caseId             String
+  case               Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  code               String
+  name               String
+  evidence           Boolean  @default(false)
+  meaning            String?
+  requiredByActions  Action[] @relation("ActionRequiresItems")
+  helpsActions       Action[] @relation("ActionHelpedBy")
+  givenByActions     Action[] @relation("ActionGives")
+  requiredByEndings  Ending[] @relation("EndingRequiresItems")
+  ownedIn            Game[]   @relation("GameItems")
+
+  @@unique([caseId, code])
+}
+
+model Ending {
+  id            String  @id @default(uuid())
+  caseId        String
+  case          Case    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  code          String
+  outcome       Outcome
+  aiHint        String
+  text          String
+  requiresItems Item[]  @relation("EndingRequiresItems")
+  reachedIn     Game[]
+
+  @@unique([caseId, code])
+}
+
+model Game {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseId      String
+  case        Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  phase       Phase       @default(INVESTIGATION)
+  actionsLeft Int
+  startedAt   DateTime    @default(now())
+  finishedAt  DateTime?
+  endingId    String?
+  ending      Ending?     @relation(fields: [endingId], references: [id], onDelete: SetNull)
+  done        Action[]    @relation("GameDoneActions")
+  items       Item[]      @relation("GameItems")
+  conditions  Condition[]
+  turns       Turn[]
+
+  @@index([userId])
+}
+
+model Condition {
+  id          String @id @default(uuid())
+  gameId      String
+  game        Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  description String
+}
+
+model Turn {
+  id         String   @id @default(uuid())
+  gameId     String
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  number     Int
+  phase      Phase
+  playerText String
+  narration  String
+  actionId   String?
+  action     Action?  @relation(fields: [actionId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@unique([gameId, number])
+}
+
+// Call log (O4). Kept after account deletion, without the user (O7).
+model AiCall {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  gameId       String?
+  provider     String
+  model        String
+  kind         String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  costUsd      Float    @default(0)
+  durationMs   Int
+  success      Boolean
+  failure      String?
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+// Key/value settings changed from the admin dashboard (e.g. the fake provider switch).
+model Setting {
+  key   String @id
+  value String
+}

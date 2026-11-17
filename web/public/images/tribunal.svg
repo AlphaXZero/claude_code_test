@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1d14"/><stop offset="1" stop-color="#140e0a"/></linearGradient>
+    <radialGradient id="light" cx=".5" cy=".2" r=".6"><stop offset="0" stop-color="#e0a43a" stop-opacity=".25"/><stop offset="1" stop-color="#e0a43a" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#wall)"/>
+  <g fill="#3a2a1d"><rect x="60" y="0" width="30" height="600"/><rect x="710" y="0" width="30" height="600"/></g>
+  <circle cx="400" cy="110" r="60" fill="none" stroke="#b08a4a" stroke-width="4"/>
+  <path d="M400 70 v80 M365 95 h70 M370 95 l-15 30 h30z M430 95 l-15 30 h30z" stroke="#b08a4a" stroke-width="3" fill="none"/>
+  <rect width="800" height="600" fill="url(#light)"/>
+  <!-- Judge -->
+  <circle cx="400" cy="250" r="38" fill="#c9b79c"/>
+  <path d="M362 240 q38 -50 76 0 q-6 -40 -38 -42 q-32 2 -38 42z" fill="#d8d3c8"/>
+  <path d="M320 380 q10 -80 80 -90 q70 10 80 90z" fill="#0d0d10"/>
+  <path d="M385 292 h30 l-15 40z" fill="#ece6d6"/>
+  <!-- Bench -->
+  <rect x="160" y="370" width="480" height="40" fill="#5a3e28"/>
+  <rect x="180" y="410" width="440" height="190" fill="#4a3220"/>
+  <g stroke="#3b2818" stroke-width="4"><line x1="290" y1="420" x2="290" y2="600"/><line x1="400" y1="420" x2="400" y2="600"/><line x1="510" y1="420" x2="510" y2="600"/></g>
+  <rect x="460" y="352" width="44" height="14" rx="3" fill="#2c1e12"/><rect x="476" y="336" width="12" height="20" fill="#2c1e12"/>
+</svg>
