@@ -1,9 +1,13 @@
 import { Body, Controller, Delete, Get, HttpCode, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { z } from 'zod';
 import { parseBody } from '../common/validation';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuotaService } from '../ai/quota.service';
 import { AuthService, AuthUser, credentialsSchema, CurrentUser, Public } from './auth';
+
+/** Against password guessing and mass sign-ups: 10 attempts per minute and per IP, on each route. */
+export const AUTH_LIMIT = { default: { limit: 10, ttl: 60_000 } };
 
 @Controller()
 export class AuthController {
@@ -14,6 +18,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @Throttle(AUTH_LIMIT)
   @Post('auth/register')
   register(@Body() body: unknown) {
     const { email, password } = parseBody(credentialsSchema, body);
@@ -21,6 +26,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(AUTH_LIMIT)
   @Post('auth/login')
   @HttpCode(200)
   login(@Body() body: unknown) {
@@ -35,6 +41,7 @@ export class AuthController {
   }
 
   /** Account deletion (O7): deletes the games, their turns and conditions; the call log is kept without the user. */
+  @Throttle(AUTH_LIMIT)
   @Delete('me')
   @HttpCode(204)
   async deleteMe(@CurrentUser() user: AuthUser, @Body() body: unknown) {

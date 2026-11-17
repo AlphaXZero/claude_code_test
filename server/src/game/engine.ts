@@ -47,7 +47,7 @@ export const RESOLUTION_TURN_LIMIT = 8;
 export const RECENT_TURNS = 5;
 export const MAX_CONDITIONS = 5;
 export const MAX_PLAYER_TEXT = 500;
-const MAX_NARRATION = 1500;
+export const MAX_NARRATION = 1500;
 const MAX_CONDITION = 100;
 
 export class InvalidAnswerError extends Error {}
@@ -230,10 +230,19 @@ function optionalString(v: unknown, field: string, max: number): string | null {
   return t;
 }
 
+/** Shortens a text to `max` characters, at the end of a sentence when possible. */
+export function shorten(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '), cut.lastIndexOf('.'));
+  return end > max / 2 ? cut.slice(0, end + 1) : `${cut.slice(0, max - 1).trimEnd()}…`;
+}
+
+/** A narration that is too long is shortened rather than rejected: the call is billed either way. */
 function narration(v: unknown): string {
-  const n = optionalString(v, 'narration', MAX_NARRATION);
+  const n = optionalString(v, 'narration', Number.MAX_SAFE_INTEGER);
   if (!n) throw new InvalidAnswerError('narration is empty');
-  return n;
+  return shorten(n, MAX_NARRATION);
 }
 
 export function checkInvestigationAnswer(raw: string, available: string[], s: GameState): InvestigationAnswer {

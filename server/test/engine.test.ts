@@ -5,7 +5,7 @@ import { parseCaseFile, CaseFile } from '../src/cases/case-file';
 import {
   applyInvestigation, applyResolution, availableActions, availableEndings, buildInvestigationPrompt,
   buildResolutionPrompt, checkInvestigationAnswer, checkResolutionAnswer, initialState, InvalidAnswerError,
-  investigationJsonSchema, RESOLUTION_TURN_LIMIT, startResolution, GameState,
+  investigationJsonSchema, RESOLUTION_TURN_LIMIT, startResolution, GameState, MAX_NARRATION, shorten,
 } from '../src/game/engine';
 import { FakeProvider } from '../src/ai/fake.provider';
 import { AiFailure } from '../src/ai/ai.types';
@@ -93,7 +93,15 @@ describe('investigation', () => {
     const s = initialState(c);
     expect(() => checkInvestigationAnswer('pas du json', [], s)).toThrow(InvalidAnswerError);
     expect(() => checkInvestigationAnswer('{"action":null,"narration":""}', [], s)).toThrow(InvalidAnswerError);
-    expect(() => checkInvestigationAnswer(JSON.stringify({ action: null, narration: 'x'.repeat(5000) }), [], s)).toThrow(InvalidAnswerError);
+  });
+
+  it('shortens a narration that is too long instead of rejecting it', () => {
+    const s = initialState(c);
+    const long = 'Une phrase de la pluie. '.repeat(200);
+    const a = checkInvestigationAnswer(JSON.stringify({ action: null, new_condition: null, removed_condition: null, narration: long }), [], s);
+    expect(a.narration.length).toBeLessThanOrEqual(MAX_NARRATION);
+    expect(a.narration.endsWith('.')).toBe(true);
+    expect(shorten('x'.repeat(2000), 100)).toHaveLength(100);
   });
 
   it('adds and removes hidden conditions', async () => {

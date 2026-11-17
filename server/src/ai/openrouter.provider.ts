@@ -30,7 +30,8 @@ export class OpenRouterProvider implements AiProvider {
           ],
           response_format: { type: 'json_schema', json_schema: req.jsonSchema },
           temperature: 0.7,
-          max_tokens: 500,
+          // Bounds the cost of a call; the prompt asks for 2 to 4 sentences, far below this.
+          max_tokens: 600,
           // Exclude providers that keep prompts; only use providers that support the schema.
           provider: { data_collection: 'deny', require_parameters: true },
           usage: { include: true },

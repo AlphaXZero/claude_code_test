@@ -1,15 +1,16 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Plan } from '@prisma/client';
+import { startOfDay } from '../common/config';
 import { PrismaService } from '../prisma/prisma.service';
 
-/** Turns per day for each plan (open question: the quota unit is the turn; a replay counts). */
+/** Turns per day (Paris time) for each plan. The quota unit is the turn; a replay counts. */
 export const PLAN_LIMITS: Record<Plan, number> = { FREE: 60, PREMIUM: 600 };
 
-export function startOfToday(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+/**
+ * Calls that count against the quota: the successful ones, and the unusable answers,
+ * because the provider bills those too. Timeouts and outages are not billed and do not count.
+ */
+export const BILLED_CALLS = { OR: [{ success: true }, { failure: 'INVALID' }] };
 
 @Injectable()
 export class QuotaService {
@@ -17,8 +18,7 @@ export class QuotaService {
 
   async status(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { plan: true } });
-    // Only successful calls count: a failed turn is not counted.
-    const used = await this.prisma.aiCall.count({ where: { userId, success: true, createdAt: { gte: startOfToday() } } });
+    const used = await this.prisma.aiCall.count({ where: { userId, createdAt: { gte: startOfDay() }, ...BILLED_CALLS } });
     const limit = PLAN_LIMITS[user.plan];
     return { plan: user.plan, used, limit, left: Math.max(0, limit - used) };
   }

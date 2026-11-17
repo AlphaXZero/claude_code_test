@@ -1,7 +1,8 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Put, Query } from '@nestjs/common';
 import { z } from 'zod';
 import { FAKE_MODES } from '../ai/ai.types';
-import { PLAN_LIMITS, startOfToday } from '../ai/quota.service';
+import { PLAN_LIMITS } from '../ai/quota.service';
+import { APP_TIMEZONE, dayKey, startOfDay } from '../common/config';
 import { SettingsService } from '../ai/settings.service';
 import { AdminOnly } from '../auth/auth';
 import { parseBody } from '../common/validation';
@@ -16,13 +17,12 @@ export class AdminController {
   @Get('stats')
   async stats(@Query('days') daysParam?: string) {
     const days = Math.min(365, Math.max(1, Number(daysParam) || 30));
-    const since = startOfToday();
-    since.setDate(since.getDate() - (days - 1));
+    const since = startOfDay(new Date(), days - 1);
 
     const perDay = await this.prisma.$queryRaw<
-      { day: Date; calls: bigint; failures: bigint; cost: number; input_tokens: bigint; output_tokens: bigint; avg_ms: number }[]
+      { day: string; calls: bigint; failures: bigint; cost: number; input_tokens: bigint; output_tokens: bigint; avg_ms: number }[]
     >`
-      SELECT date_trunc('day', "createdAt") AS day,
+      SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIMEZONE}, 'YYYY-MM-DD') AS day,
              count(*) AS calls,
              count(*) FILTER (WHERE NOT success) AS failures,
              coalesce(sum("costUsd"), 0)::float AS cost,
@@ -54,9 +54,11 @@ export class AdminController {
 
     return {
       days,
+      timezone: APP_TIMEZONE,
+      today: dayKey(new Date()),
       totals: { ...totals, costPerTurn: succeeded ? totals.cost / succeeded : 0 },
       perDay: perDay.map((d) => ({
-        day: d.day.toISOString().slice(0, 10),
+        day: d.day,
         calls: Number(d.calls),
         failures: Number(d.failures),
         cost: d.cost,
